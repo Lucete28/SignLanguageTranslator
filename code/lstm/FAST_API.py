@@ -24,9 +24,6 @@ from fastapi import FastAPI, Request,HTTPException
 from pydantic import BaseModel
 import numpy as np
 from collections import Counter
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 GROUP_SIZE = 25
 MODELS = []
