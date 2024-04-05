@@ -8,6 +8,7 @@ Container들 에서 전달 받은 결과를 종합 및 로컬에 전송
 3. 한글 변환
 4. 전송
 """
+# cd C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\code\bagging\; uvicorn Main_Terminal:app --reload --host 0.0.0.0 --port 8080
 
 from fastapi import FastAPI, Request,HTTPException
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -16,13 +17,17 @@ from collections import Counter
 import requests
 import asyncio
 import pickle
+from datetime import datetime, timedelta, timezone
+KST = timezone(timedelta(hours=9))
+current_time = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
+
 
 PATH_LIST = []
 app = FastAPI()
 
-with open(r'G:\내 드라이브\LAB\SignLanguageTranslator\logs\act_pkl\V2_A300.pkl', 'rb') as file:
+with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\1645_act_list.pkl', 'rb') as file:
         actions = pickle.load(file)
-        # print(len(actions),'개의 액션이 저장되어있습니다.')
+        print(len(actions),'개의 액션이 저장되어있습니다.')
 
 @app.post("/receive") # 로컬에서 데이터 전송 받아서 컨테이너에 뿌리기
 def receive_array(request: Request):
@@ -58,4 +63,4 @@ async def WhatIsThisWord():
 
 @app.get("/")
 def test():
-    return {f"message": f"This is Main terminal"}
+    return {f"{current_time}": f"This is Main terminal"}

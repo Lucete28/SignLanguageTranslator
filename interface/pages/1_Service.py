@@ -9,7 +9,7 @@ from tensorflow.keras.models import load_model
 import pickle
 import json
 import sys
-sys.path.append('G:/내 드라이브/LAB')
+sys.path.append('C:/Users/oem/Desktop/jhy/signlanguage')
 
 from SignLanguageTranslator.code.lstm.sentence_api import make_sentence
 
@@ -33,16 +33,16 @@ if 'data_poket' not in st.session_state:
 if 'sentence' not in st.session_state:
     st.session_state.sentence = [None]
 if 'actions' not in st.session_state:
-    with open(r'G:\내 드라이브\LAB\SignLanguageTranslator\logs\act_pkl\V2_A300.pkl', 'rb') as file:
+    with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\act_pkl\V2_A300.pkl', 'rb') as file:
         st.session_state.actions = pickle.load(file)
         print(len(st.session_state.actions),'개의 액션이 저장되어있습니다.')
         st.session_state.actions.append(None)
 if 'j_data' not in st.session_state:
-    with open(r'G:\내 드라이브\LAB\SignLanguageTranslator\logs\api_log.json', 'r',encoding='utf-8') as j_file:
+    with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\api_log.json', 'r',encoding='utf-8') as j_file:
         st.session_state.j_data = json.load(j_file)
         print('원본 로드 성공')
 if 'model' not in st.session_state:
-    st.session_state.model = load_model(f"C:/PlayData/lstm_test_V2_A300_e50_C0_B0.h5") 
+    st.session_state.model = load_model(r"C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\model\lstm_test_V2_A300_e50_C0_B0.h5") 
 if 'sentence_record' not in st.session_state:
     st.session_state.sentence_record = []
     
@@ -79,9 +79,9 @@ word_placeholder = st.empty()
 c11,c12 = st.columns(2)
 
 if st.session_state.camera and c12.button('Turn to Sentence'):
-    generated_sentence = make_sentence([i for i in st.session_state.sentence if i is not None]).split('\n')[0]
+    generated_sentence = make_sentence([i for i in st.session_state.sentence if i is not None]).split('/n')[0]
     c12.write(generated_sentence)
-    st.session_state.sentence_record.append(generated_sentence.split('\n')[0])
+    st.session_state.sentence_record.append(generated_sentence.split('/n')[0])
     print(generated_sentence)
     st.session_state.sentence= [None]
     re_run()
@@ -95,68 +95,70 @@ if c2.button('End'):
 
 if st.session_state.camera:
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        st.warning("카메라를 열 수 없습니다.")
+    else:
+        while cap.isOpened() and st.session_state.camera:
+            ret, frame = cap.read()
+            if not ret:
+                st.warning("Can't fine ret")
+            st.session_state.frame_count += 1  # 세션 상태를 사용하여 FRAME_COUNT 업데이트
+            frame = cv2.flip(frame, 1)
+            
+            # 프레임 RGB 변환
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = hands.process(frame_rgb)
+            # 손 랜드마크 그리기                    
+            if results.multi_hand_landmarks is not None:
+                CANT_FIND_HAND_COUNT = 0
+                da = []
+                if len(results.multi_hand_landmarks) == 2 or len(results.multi_hand_landmarks) == 1:
+                    d= []
+                    for res in results.multi_hand_landmarks:
+                        mp_drawing.draw_landmarks(frame, res, mp_hands.HAND_CONNECTIONS) # 랜드마크 그려주기
+                        joint = np.zeros((21, 3))
+                        for j, lm in enumerate(res.landmark):
+                            joint[j] = [lm.x, lm.y, lm.z]
 
-    while cap.isOpened() and st.session_state.camera:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        st.session_state.frame_count += 1  # 세션 상태를 사용하여 FRAME_COUNT 업데이트
-        frame = cv2.flip(frame, 1)
-        
-        # 프레임 RGB 변환
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(frame_rgb)
-        # 손 랜드마크 그리기                    
-        if results.multi_hand_landmarks is not None:
-            CANT_FIND_HAND_COUNT = 0
-            da = []
-            if len(results.multi_hand_landmarks) == 2 or len(results.multi_hand_landmarks) == 1:
-                d= []
-                for res in results.multi_hand_landmarks:
-                    mp_drawing.draw_landmarks(frame, res, mp_hands.HAND_CONNECTIONS) # 랜드마크 그려주기
-                    joint = np.zeros((21, 3))
-                    for j, lm in enumerate(res.landmark):
-                        joint[j] = [lm.x, lm.y, lm.z]
+                        # Compute angles between joints
+                        v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                        v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
+                        v = v2 - v1 # [20, 3]
+                        # Normalize v
+                        v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
 
-                    # Compute angles between joints
-                    v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
-                    v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
-                    v = v2 - v1 # [20, 3]
-                    # Normalize v
-                    v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+                        # Get angle using arcos of dot product
+                        angle = np.arccos(np.einsum('nt,nt->n',
+                            v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:],
+                            v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]lp
 
-                    # Get angle using arcos of dot product
-                    angle = np.arccos(np.einsum('nt,nt->n',
-                        v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:],
-                        v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]lp
+                        angle = np.degrees(angle) # Convert radian to degree
+                        #######################################
+                        angle = np.array([angle], dtype= np.float32)
+                        d.append(np.concatenate([joint.flatten(),angle.flatten()]))
+                        if len(results.multi_hand_landmarks)==1:
+                            d.append(np.zeros_like(d[0]))
+                    da.append([np.concatenate(d)])
+                    if st.session_state.data_poket.size != 0:
+                        st.session_state.data_poket = np.vstack([st.session_state.data_poket,np.concatenate(da)])
+                        if st.session_state.data_poket.shape[0] >= 30:
+                            input_data = np.expand_dims(np.array(st.session_state.data_poket[-seq_length:], dtype=np.float16), axis=0)
+                            pred = st.session_state.model.predict(input_data, verbose=0).squeeze()
+                            pred_idx= int(np.argmax(pred))
+                            if st.session_state.data_poket.shape[0] >= 100:
+                                st.session_state.data_poket = st.session_state.data_poket[:30]
+                            
+                    else:
+                        st.session_state.data_poket = da
+            else: #손이 보이지 않을때
+                CANT_FIND_HAND_COUNT +=1
+                if CANT_FIND_HAND_COUNT >= 10 and st.session_state.sentence[-1]!=translate_e_to_k(st.session_state.actions[pred_idx]):
+                    st.session_state.sentence.append(translate_e_to_k(st.session_state.actions[pred_idx]))
+                    pred_idx =-1
 
-                    angle = np.degrees(angle) # Convert radian to degree
-                    #######################################
-                    angle = np.array([angle], dtype= np.float32)
-                    d.append(np.concatenate([joint.flatten(),angle.flatten()]))
-                    if len(results.multi_hand_landmarks)==1:
-                        d.append(np.zeros_like(d[0]))
-                da.append([np.concatenate(d)])
-                if st.session_state.data_poket.size != 0:
-                    st.session_state.data_poket = np.vstack([st.session_state.data_poket,np.concatenate(da)])
-                    if st.session_state.data_poket.shape[0] >= 30:
-                        input_data = np.expand_dims(np.array(st.session_state.data_poket[-seq_length:], dtype=np.float16), axis=0)
-                        pred = st.session_state.model.predict(input_data, verbose=0).squeeze()
-                        pred_idx= int(np.argmax(pred))
-                        if st.session_state.data_poket.shape[0] >= 100:
-                            st.session_state.data_poket = st.session_state.data_poket[:30]
-                        
-                else:
-                    st.session_state.data_poket = da
-        else: #손이 보이지 않을때
-            CANT_FIND_HAND_COUNT +=1
-            if CANT_FIND_HAND_COUNT >= 10 and st.session_state.sentence[-1]!=translate_e_to_k(st.session_state.actions[pred_idx]):
-                st.session_state.sentence.append(translate_e_to_k(st.session_state.actions[pred_idx]))
-                pred_idx =-1
-
-        frame_placeholder.image(frame, channels="BGR", use_column_width=True)
-        word_placeholder.write(f'WORD: {translate_e_to_k(st.session_state.actions[pred_idx])}, {st.session_state.actions[pred_idx]}')
-        sentence_placeholder.write([i for i in st.session_state.sentence if i is not None])
+            frame_placeholder.image(frame, channels="BGR", use_column_width=True)
+            word_placeholder.write(f'WORD: {translate_e_to_k(st.session_state.actions[pred_idx])}, {st.session_state.actions[pred_idx]}')
+            sentence_placeholder.write([i for i in st.session_state.sentence if i is not None])
 if not st.session_state.camera:
     try:
         cap.release()

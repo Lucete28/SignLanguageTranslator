@@ -5,23 +5,28 @@ Bagging을 위해 컨테이너 분리 후 서버 별 API 작성
 3. 예측을 기록
 4. Voting 결과를 메인 터미널 서버로 전송
 """ 
-# uvicorn Container:app --reload --host 0.0.0.0
+# cd C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/code/bagging; uvicorn Container1:app --reload --host 0.0.0.0 --port 800
 from tensorflow.keras.models import load_model
 from fastapi import FastAPI, Request,HTTPException
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from collections import Counter
 import requests
-
+import glob
 CONTAINER_ID = 0 # 0~10
 CONTAINER_SIZE = 3
 MODELS = []
+MODEL_PATH = 'C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/model/2024-03-11_23-04-15G300D6'
 PREDICT_LIST =[ [] for _ in range(CONTAINER_SIZE) ] #[[a],[b],[c]]
+
+
 
 # 모델 준비
 for i in range(CONTAINER_SIZE):
-    print(f'{i+CONTAINER_ID}번 모델 load')
-    model = load_model(f'C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/model/2024-02-25_23-26-15/lstm_test103_G{i}_1645act_e20_C2_B0.h5')
+    print(f'{i+CONTAINER_ID*3}번 모델 load')
+    model_pattern = f'{MODEL_PATH}/lstm_test103_G{i}_*.h5'
+    model_file = glob.glob(model_pattern)[0]
+    model = load_model(model_file)
     MODELS.append(model)
 print('All models ready')
 
@@ -76,7 +81,7 @@ def confirm():
         # return {"status": "Hello World","CODE":True, "pred_count" : final_confrim_li, "most_common_pred" : final_confrim_li[0][0], "most_common_count": final_confrim_li[0][1],"is_array_here":False,"most_common_by_model":result,"action_len":act_len}
         data = {"CODE":True, "pred_list" : organize_li}  
         print(data,"전송")
-        response = requests.post('https://httpbin.org/Word_End', data=data)
+        response = requests.post('http://203.250.133.192:8010/Word_End', data=data)
         print(response["status"])
     else:
         return {"status" : "NO DATA", "CODE":False}

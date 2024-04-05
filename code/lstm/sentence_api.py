@@ -1,7 +1,9 @@
 # gpt api 사용
 import openai
 import json
-with open('G:\내 드라이브\LAB\SignLanguageTranslator\key.json',encoding='utf-8') as json_file:
+# import sys
+# sys.path.append('C:/Users/oem/Desktop/jhy/signlanguage')
+with open('C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/key.json',encoding='utf-8') as json_file:
     KEY = json.load(json_file)
 openai.api_key  = KEY['open_ai']
 
