@@ -23,7 +23,7 @@ KST = timezone(timedelta(hours=9))
 current_time = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 
-PATH_LIST = ['http://203.250.133.192:8000/','http://203.250.133.192:8001/','http://203.250.133.192:8002/','http://203.250.133.192:8003/']
+PATH_LIST = ['http://13.124.3.95:54116']
 app = FastAPI()
 
 with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\1645_act_list.pkl', 'rb') as file:
@@ -37,28 +37,33 @@ async def receive_data(request: Request):
     async with httpx.AsyncClient(timeout=Timeout(60,connect=60)) as client:
         for path in PATH_LIST:
             # 수신된 요청 본문을 그대로 다른 엔드포인트로 비동기적으로 전달
-            await client.post(path, content=data)
+            response = await client.post(f"{path}/receive", content=data)
             # 여기에서 response를 처리할 수 있습니다 (예: 로깅)
-
+            print(response.json())
     return {"message": "Data forwarded successfully"}
 
 
+WORD_LIST=[]
+@app.get("/Word_End")
+async def Word_End():
+    async with httpx.AsyncClient() as client:
+        tasks = (client.get(f'{path}/confirm') for path in PATH_LIST)  
+        responses = await asyncio.gather(*tasks)  
+        for response in responses:
+            data = response.json()
+            words = data["pred_list"]
+            WORD_LIST.extend(words)
+            word_idx = Counter(WORD_LIST).most_common()[0][0]
 
-WORD_LIST= []
-@app.post("/Word_End")
-async def Word_End(request: Request):
-    data = await request.json()
-    words = data["pred_list"]
-    WORD_LIST.extend(words)
-    return {"status": f"You completed {len(WORD_LIST)}st time."}
-
-        
-@app.get("/WhatIsThisWord")
-async def WhatIsThisWord():
-    while len(WORD_LIST) < 33:
-        await asyncio.sleep(0.001)  # 대기
-    word_idx = Counter(WORD_LIST).most_common[0][0]
     return {"CODE":True,"word": actions[word_idx],'is_array_here':False}  # 최빈단어 반환
+
+
+# @app.get("/WhatIsThisWord")
+# async def WhatIsThisWord():
+#     while len(WORD_LIST) < 3:
+#         await asyncio.sleep(0.001)  # 대기
+#     word_idx = Counter(WORD_LIST).most_common[0][0]
+#     return {"CODE":True,"word": actions[word_idx],'is_array_here':False}  # 최빈단어 반환
 
 
 

@@ -14,7 +14,7 @@ import numpy as np
 from collections import Counter
 import requests
 import glob
-CONTAINER_ID = 0 # 0~10
+CONTAINER_ID = 0  # 0~10
 CONTAINER_SIZE = 3
 GPU_NUM = 0
 MODELS = []
@@ -22,17 +22,17 @@ MODEL_PATH = 'C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/model
 PREDICT_LIST =[ [] for _ in range(CONTAINER_SIZE) ] #[[a],[b],[c]]
 
 # GPU 설정
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:        
-        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-    except RuntimeError as e:
-        print(e)
+# gpus = tf.config.list_physical_devices('GPU')
+# if gpus:
+#     try:        
+#         tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+#     except RuntimeError as e:
+#         print(e)
 
 # 모델 준비
 for i in range(CONTAINER_SIZE):
     print(f'{i+CONTAINER_ID*3}번 모델 load')
-    model_pattern = f'{MODEL_PATH}/lstm_test103_G{i}_*.h5'
+    model_pattern = f"lstm_test103_G{i}_*.h5"
     model_file = glob.glob(model_pattern)[0]
     model = load_model(model_file)
     MODELS.append(model)
@@ -89,8 +89,9 @@ def confirm():
         # return {"status": "Hello World","CODE":True, "pred_count" : final_confrim_li, "most_common_pred" : final_confrim_li[0][0], "most_common_count": final_confrim_li[0][1],"is_array_here":False,"most_common_by_model":result,"action_len":act_len}
         data = {"CODE":True, "pred_list" : organize_li}  
         print(data,"전송")
-        response = requests.post('http://203.250.133.192:8010/Word_End', data=data)
-        print(response["status"])
+        # response = requests.post('http://203.250.133.192:8010/Word_End', data=data)
+        # print(response["status"])
+        return data
     else:
         return {"status" : "NO DATA", "CODE":False}
 
