@@ -9,7 +9,8 @@ Container들 에서 전달 받은 결과를 종합 및 로컬에 전송
 4. 전송
 """
 # cd C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\code\bagging\; uvicorn Main_Terminal:app --reload --host 0.0.0.0 --port 8080
-
+import httpx
+from httpx import Timeout
 from fastapi import FastAPI, Request,HTTPException
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
@@ -22,21 +23,24 @@ KST = timezone(timedelta(hours=9))
 current_time = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 
-PATH_LIST = []
+PATH_LIST = ['http://203.250.133.192:8000/','http://203.250.133.192:8001/','http://203.250.133.192:8002/','http://203.250.133.192:8003/']
 app = FastAPI()
 
 with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\1645_act_list.pkl', 'rb') as file:
         actions = pickle.load(file)
         print(len(actions),'개의 액션이 저장되어있습니다.')
 
-@app.post("/receive") # 로컬에서 데이터 전송 받아서 컨테이너에 뿌리기
-def receive_array(request: Request):
-    data = request.json()
-    # 배열 변환
-    array_list = data['array']
-    array = np.array(array_list, dtype=np.float16) 
-    for path in PATH_LIST:
-        response = requests.post(f"{path}/recive",data=array)
+@app.post("/receive")
+async def receive_data(request: Request):
+    data = await request.body()  # 요청 본문을 바이트 스트림으로 수신
+
+    async with httpx.AsyncClient(timeout=Timeout(60,connect=60)) as client:
+        for path in PATH_LIST:
+            # 수신된 요청 본문을 그대로 다른 엔드포인트로 비동기적으로 전달
+            await client.post(path, content=data)
+            # 여기에서 response를 처리할 수 있습니다 (예: 로깅)
+
+    return {"message": "Data forwarded successfully"}
 
 
 

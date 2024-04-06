@@ -14,9 +14,9 @@ import numpy as np
 from collections import Counter
 import requests
 import glob
-CONTAINER_ID = 0 # 0~10
+CONTAINER_ID = 3 # 0~10
 CONTAINER_SIZE = 3
-GPU_NUM = 0
+GPU_NUM = 3
 MODELS = []
 MODEL_PATH = 'C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/model/2024-03-11_23-04-15G300D6'
 PREDICT_LIST =[ [] for _ in range(CONTAINER_SIZE) ] #[[a],[b],[c]]
