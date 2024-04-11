@@ -1,5 +1,5 @@
-# cd C:\Users\oem\Desktop\jhy\signlanguage\Sign_Language_Remaster\code\lstm; uvicorn FAST_API:app --reload --host 0.0.0.0
-# .\apienv\Scripts\activate
+# cd C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/code/lstm; uvicorn FAST_API:app --reload --host 0.0.0.0
+# ./apienv/Scripts/activate
 # http:203.250.133.192:8000/
 
 # 사전준비
@@ -13,11 +13,11 @@ try:
 except ImportError:
     print("TensorFlow is not installed")
 import csv
-with open("keys.csv", "r") as file:
-    csv_reader = csv.reader(file)
+# with open("keys.csv", "r") as file:
+#     csv_reader = csv.reader(file)
     
-    # 각 행의 첫 번째 열만 추출하여 리스트로 변환
-    key_list = [row[0] for row in csv_reader]
+#     # 각 행의 첫 번째 열만 추출하여 리스트로 변환
+#     key_list = [row[0] for row in csv_reader]
 
 from tensorflow.keras.models import load_model
 from fastapi import FastAPI, Request,HTTPException
@@ -25,11 +25,19 @@ from pydantic import BaseModel
 import numpy as np
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
-GROUP_SIZE = 25
+import glob
+GROUP_SIZE = 3
 MODELS = []
+
+
+
+
+
 for i in range(GROUP_SIZE):
-    print(f'{i+1}/{GROUP_SIZE}')
-    model = load_model(f'C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/model/2024-02-25_23-26-15/lstm_test103_G{i}_1645act_e20_C2_B0.h5')
+    print(f"{i} model ready")
+    model_pattern = f"C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/model/2024-03-11_23-04-15G300D6/lstm_test103_G{i}_*.h5"
+    model_file = glob.glob(model_pattern)[0]
+    model = load_model(model_file)
     MODELS.append(model)
 print('All models ready')
 app = FastAPI()
@@ -115,8 +123,8 @@ def confirm():
     
 
 
-@app.post("/certification")
-def receive_array(key: str):
-    if key not in key_list:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-    return {"CODE":True,"message": "Successfully authenticated"}
+# @app.post("/certification")
+# def receive_array(key: str):
+#     if key not in key_list:
+#         raise HTTPException(status_code=401, detail="Invalid API Key")
+#     return {"CODE":True,"message": "Successfully authenticated"}
