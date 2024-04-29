@@ -28,31 +28,32 @@ current_time = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 
 # PATH_LIST = ['13.124.201.219:54205','52.79.75.52:53637','13.124.40.13:54075']
-PATH_LIST = ['13.124.201.219:54205','52.79.75.52:53637']
+PATH_LIST = ['13.124.40.13:51262',
+             '52.79.111.30:58130',
+             '15.165.140.203:54038',
+             '52.78.44.20:55268',
+             '52.79.75.52:57171',
+             '13.124.40.13:56380',
+             '54.180.103.32:57704',
+             '13.209.161.15:54031',
+             '52.79.111.30:53999',
+             '43.203.19.151:57272',
+             '13.125.34.7:51793'
+             ]
+print(f'{len(PATH_LIST)}개의 컨테이너가 준비되어 있습니다.')
 app = FastAPI()
 
 with open(r'C:\Users\oem\Desktop\jhy\signlanguage\SignLanguageTranslator\logs\1645_act_list.pkl', 'rb') as file:
         actions = pickle.load(file)
         print(len(actions),'개의 액션이 저장되어있습니다.')
-"""
-@app.post("/receive")
-async def receive_data(request: Request):
-    data = await request.body()  # 요청 본문을 바이트 스트림으로 수신
 
-    async with httpx.AsyncClient(timeout=Timeout(60,connect=60)) as client:
-        for path in PATH_LIST:
-            # 수신된 요청 본문을 그대로 다른 엔드포인트로 비동기적으로 전달
-            response = await client.post(f"{path}/receive", content=data)
-            print(response.json())
-    return {"message": "Data forwarded success"}
-"""
 @app.post("/receive")
 async def receive_data(request: Request):
     startTime = time.time()
     data = await request.body()
 
     async def send_request(path):
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60, connect=60)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10, connect=10)) as client:
             response = await client.post(f"http://{path}/receive", content=data)
             return response.json()
 
@@ -62,11 +63,15 @@ async def receive_data(request: Request):
     # for response in responses:
     #     print(response)
     endTime=time.time()
-    print(f"recieve and send take {endTime-startTime}")
-    return {"message": "Data forwarded successfully"}
+    return_time = endTime-startTime
+    print(f"recieve and send take {return_time}")
+    if return_time>0.9:
+         requests.request(f"http://{path}/receive" for path in PATH_LIST)
+         print("컨테이너 메모리 정리 완료")
+    return {"message": "Data forwarded successfully","return_time":return_time}
 
 
-@app.get("/Word_End")
+@app.get("/Word_End") # 단어 입력 종료 및 최다 단어 반환
 async def Word_End():
     WORD_LIST=[]
 
@@ -79,7 +84,7 @@ async def Word_End():
             WORD_LIST.extend(words)
             word_idx = Counter(WORD_LIST).most_common()[0][0]
 
-    return {"CODE":True,"word": actions[word_idx],'is_array_here':False}  # 최빈단어 반환
+    return {"CODE":True,"word": actions[word_idx],"word_idx":word_idx,'is_array_here':False}  # 최빈단어 반환
 
 
 # @app.get("/WhatIsThisWord")
