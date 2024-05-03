@@ -50,8 +50,8 @@ def write_json_log(J_PATH, data):
 
 def get_response(P=50): #    해야하는 페이지 받아서 return item_li 반환
     print(P,'번 반복예정')
-    TXT_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\Sign_Language_Remaster\logs\LOG.TXT'
-    JSON_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\Sign_Language_Remaster\logs\api_log.json'
+    TXT_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\LOG.TXT'
+    JSON_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\api_log.json'
     for _ in range(P):
         subject = 'Daily'
         todo_page, j_data = page_todo(JSON_LOG_PATH, subject)

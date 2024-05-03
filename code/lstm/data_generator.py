@@ -158,4 +158,3 @@ def make_data(act_ko, v_path):
         os.rmdir(f'dataset/{ACTION}')  
         print(f"{f'dataset/{ACTION}'} 빈폴더 삭제")
 
-print("This file is Data_generator.py \nThis file only have Function.\nPlease run ### run_generator.py ### file")

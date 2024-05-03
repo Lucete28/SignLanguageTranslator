@@ -53,8 +53,8 @@ async def receive_data(request: Request):
     data = await request.body()
 
     async def send_request(path):
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10, connect=10)) as client:
-            response = await client.post(f"http://{path}/receive", content=data)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10)) as client:
+            response = await client.post(f"http://{path}/receive",data=data)
             return response.json()
 
     # 각 경로에 대한 요청을 병렬로 실행
@@ -65,9 +65,9 @@ async def receive_data(request: Request):
     endTime=time.time()
     return_time = endTime-startTime
     print(f"recieve and send take {return_time}")
-    if return_time>0.9:
-         requests.request(f"http://{path}/receive" for path in PATH_LIST)
-         print("컨테이너 메모리 정리 완료")
+    # if return_time>0.9:
+    #      (requests.request(f"http://{path}/receive" )for path in PATH_LIST)
+    #      print("컨테이너 메모리 정리 완료")
     return {"message": "Data forwarded successfully","return_time":return_time}
 
 
