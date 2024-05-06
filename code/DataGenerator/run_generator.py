@@ -37,7 +37,7 @@ def update_json_log(JSON_LOG_PATH, page, job_todo):
 def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 return item_li 반환
     print(repeat,'번 반복예정')
     TXT_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\LOG.TXT'
-    JSON_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\api_log.json'
+    JSON_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\new_log.json'
     job_todo = []
     for _ in range(repeat):
         start_page +=1
@@ -105,8 +105,6 @@ def call_generator(todo_list):
         title, url_path = job
         # make_data(title, url_path)
 
-
-get_source(2)
 
 import sys
 

@@ -25,6 +25,7 @@ def video_test():
 
 def make_data(act_ko, v_path): #단어와 영상주소 
     video_test()
+    Dataset_path = 'C:/Users/oem/Desktop/jhy/new_dataset'
     def apply_settings(image, angle, size = 1):
         height, width = image.shape[:2]
         center = (width // 2, height // 2)
@@ -38,7 +39,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
     seq_length = 30
     created_time = datetime.now().strftime('%y_%m_%d')
     print('created at :',created_time)
-    os.makedirs(f'dataset/{ACTION}', exist_ok=True)
+    os.makedirs(f'{Dataset_path}/{ACTION}', exist_ok=True)
     # 파라미터 값
     rotate_li = [0, 5, -5]  # 각 범위 축소(+- 10 삭제)
     speed_li = [1, 3, 5]
@@ -170,7 +171,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
     # 파일 저장
     if len(full_seq_data.shape) ==3 :
-        np.save(os.path.join(f'dataset/{ACTION}', f'raw_{created_time}'), data)
+        np.save(os.path.join(f'{Dataset_path}/{ACTION}', f'raw_{created_time}'), data)
         # np.save(os.path.join(f'dataset/{ACTION}', f'seq_{created_time}_{full_seq_data.shape[0]}'), full_seq_data)
         print(ACTION,'데이터가 저장되었습니다. shape: ', data.shape)
     
@@ -178,10 +179,11 @@ def make_data(act_ko, v_path): #단어와 영상주소
     cap.release()
     cv2.destroyAllWindows()
 
+
     # 비정상 폴더 삭제 (빈폴더)
-    if os.path.exists(f'dataset/{ACTION}') and not os.listdir(f'dataset/{ACTION}'):
-        os.rmdir(f'dataset/{ACTION}')  
-        print(f"{f'dataset/{ACTION}'} 비정상 삭제")
+    if os.path.exists(f'{Dataset_path}/{ACTION}') and not os.listdir(f'dataset/{ACTION}'):
+        os.rmdir(f'{Dataset_path}/{ACTION}')  
+        print(f"{f'{Dataset_path}/{ACTION}'} 비정상 폴더 삭제")
 
 
 
