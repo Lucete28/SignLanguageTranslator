@@ -8,7 +8,7 @@ from tqdm import tqdm
 from data_generator import *
 # import datetime
 #####################################################################################################
-       
+# C:/Users/oem/AppData/Local/Programs/Python/Python38/python.exe c:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/code/DataGenerator/run_generator.py
 
 def write_txt_log(T_path, text):
     current_time = datetime.now()
@@ -22,13 +22,13 @@ def write_json_log(J_PATH, data):
         json.dump(data, json_file, ensure_ascii=False, indent=4)
 
 def update_json_log(JSON_LOG_PATH, page, job_todo):
-    with open(JSON_LOG_PATH, "r") as file:
+    with open(JSON_LOG_PATH, "r", encoding='utf-8') as file:
         data = json.load(file)
 
     data["Daily"][page] = job_todo
 
-    with open(JSON_LOG_PATH, "w") as file:
-        json.dump(data, file, indent=4)
+    with open(JSON_LOG_PATH, "w", encoding='utf-8') as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
 #####################################################################################################
         
 
@@ -88,7 +88,7 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
     retries = 0
     while retries < 5:
         try:
-            update_json_log(JSON_LOG_PATH,start_page,job_todo)
+            update_json_log(JSON_LOG_PATH,f'{start_page- repeat}-{start_page-1}',job_todo)
             print("Successfully updated the JSON log.")
             call_generator(job_todo)
             break  # 성공 시 루프 탈출
@@ -110,6 +110,6 @@ import sys
 
 if __name__ == "__main__":
     start_page = input("시작페이지를 입력하세요: ")
-    get_source(start_page)
+    get_source(int(start_page))
 
 
