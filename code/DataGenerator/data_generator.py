@@ -8,8 +8,23 @@ import random
 from googletrans import Translator
 from itertools import product
 
+def video_test():
+    print("임시 영상재생")
+    cap = cv2.VideoCapture('https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # 프레임에 대한 처리
+        cv2.imshow('Frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cap.release()
+    cv2.destroyAllWindows()
+    print("임시 영상 재생 종료")
 
 def make_data(act_ko, v_path): #단어와 영상주소 
+    video_test()
     def apply_settings(image, angle, size = 1):
         height, width = image.shape[:2]
         center = (width // 2, height // 2)
@@ -168,4 +183,6 @@ def make_data(act_ko, v_path): #단어와 영상주소
         os.rmdir(f'dataset/{ACTION}')  
         print(f"{f'dataset/{ACTION}'} 비정상 삭제")
 
-make_data('tmp','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
+
+
+# make_data('tmp','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
