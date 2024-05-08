@@ -7,24 +7,24 @@ from datetime import datetime
 import random
 from googletrans import Translator
 from itertools import product
+import json
+from filenoti import filenoti as fn #라인 알림
+with open("C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/key.json", 'r',encoding='utf-8') as json_file:
+    data = json.load(json_file)
+fn.api_key = data['Line_api']
 
-def video_test():
-    print("임시 영상재생")
+def check_network():
+    print("Network Check start")
     cap = cv2.VideoCapture('https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
-        # 프레임에 대한 처리
-        cv2.imshow('Frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        break
     cap.release()
     cv2.destroyAllWindows()
-    print("임시 영상 재생 종료")
+    print("Network Check end")
 
 def make_data(act_ko, v_path): #단어와 영상주소 
-    video_test()
+    check_network()
     Dataset_path = 'C:/Users/oem/Desktop/jhy/new_dataset'
     def apply_settings(image, angle, size = 1):
         height, width = image.shape[:2]
@@ -99,25 +99,29 @@ def make_data(act_ko, v_path): #단어와 영상주소
                             joint[j] = [lm.x, lm.y, lm.z]
                         v1_indices = [12, 11]  # 부모 관절 어깨
                         v2_indices = [16, 15]  # 자식 관절 손목
-                        if not (np.isnan(joint[v1_indices]).any() or np.isnan(joint[v2_indices]).any()):
-                            v1 = joint[v1_indices, :3]
-                            v2 = joint[v2_indices, :3]
-                            v = v2 - v1
-
-                            # 정규화
-                            v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
-
-                            # 벡터 사이의 각도 계산
-                            angle = np.arccos(np.einsum('nt,nt->n', v, v))  # 내적 계산
-
-                            angle = np.degrees(angle)
-                            angle = np.array([angle], dtype=np.float32)
-
-                            # 모든 관절과 각도를 1차원 배열로 합쳐 저장
-                            pose_data.append(np.concatenate([joint.flatten(), angle.flatten()]))
-
-                    # #손 처리
                         
+                        v1 = joint[v1_indices, :3]
+                        v2 = joint[v2_indices, :3]
+                        v = v2 - v1
+
+                        # 정규화
+                        v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+                        # 벡터 사이의 각도 계산
+                        angle = np.arccos(np.einsum('nt,nt->n', v, v))  # 내적 계산
+                        angle = np.degrees(angle)
+                        angle = np.array([angle], dtype=np.float32)
+                        raw_pose_data = np.concatenate([joint.flatten(), angle.flatten()])
+
+                        if not np.isnan(raw_pose_data).any(): # nan 값 확인
+                            # 모든 관절과 각도를 1차원 배열로 합쳐 저장
+                            pose_data.append(raw_pose_data)
+                            if np.isnan(raw_pose_data).any():
+                                print('err occur in pose!!!!!!')
+
+
+                # #손 처리
+                    
                             single_hand = []
                             for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
                                 mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
@@ -169,7 +173,10 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
     full_seq_data = np.array(full_seq_data)
     # print(ACTION, full_seq_data.shape, data.shape) # 데이터 모양 확인
-
+    #nan 값 확인
+    if np.isnan(data).any():
+        print('nan 발생: ',np.where(np.isnan(data)))
+        fn.noti_print(ACTION,"데이터 셋에서 nan 발생!!")
     # 파일 저장
     if len(full_seq_data.shape) ==3 :
         np.save(os.path.join(f'{Dataset_path}/{ACTION}', f'raw_{created_time}_{data.shape[0]}'), data)
@@ -188,4 +195,4 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
 
 
-# make_data('tmp','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
+# make_data('TEST','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
