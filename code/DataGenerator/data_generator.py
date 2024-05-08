@@ -193,6 +193,6 @@ def make_data(act_ko, v_path): #단어와 영상주소
         os.rmdir(f'{Dataset_path}/{ACTION}')  
         print(f"{f'{Dataset_path}/{ACTION}'} 비정상 폴더 삭제")
 
-
+    return {'data.shape':data.shape}
 
 # make_data('TEST','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')

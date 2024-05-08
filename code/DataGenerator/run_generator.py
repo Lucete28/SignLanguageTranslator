@@ -57,7 +57,7 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
         
         
         if response.status_code == 200:
-            print('요청 성공')
+            # print('요청 성공')
             # write_txt_log(TXT_LOG_PATH, f'Page {page} api 요청 성공') #임시
             page_start_time = datetime.now()
             content_type = response.headers.get('Content-Type')
@@ -93,36 +93,58 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
     while retries < 5:
         try:
             print('###############')
-            print(start_page)
+            # print(start_page)
             update_json_log(JSON_LOG_PATH,f'{start_page- repeat}-{start_page-1}',job_todo)
             print("Successfully updated the JSON log.")
             call_generator(job_todo,start_page)
+            # fn.noti_print(f'{start_page}번 페이지 프레임: {total_frame}')
             break  # 성공 시 루프 탈출
         except Exception as e:
             retries += 1
             print(f"Error occurred: {e}. Retry {retries}/{5} in {5} seconds...")
+            fn.noti_print(f'KEY: {start_page- repeat}-{start_page-1}\n에서 jlog 업데이트 문제 발생')
             time.sleep(5)
-
+    
     if retries == 5:
         print("Max retries reached. Could not update the JSON log.")
     
 def call_generator(todo_list,start_page):
     i = 0
-    for job in tqdm(todo_list):
+    for idx, job in enumerate(tqdm(todo_list)):
         # fn.noti_print(f'{start_page-10+i}번 페이지 작업 시작')
         i+=1
         title, url_path = job
-        make_data(title, url_path)
+        result = make_data(title, url_path)
+        frame = result['data.shape'][0]
+        increment = len(todo_list) // 10
+        if (idx + 1) % increment == 0:
+            fn.noti_print(f"{start_page-10} 페이지 {(idx + 1) / len(todo_list) * 100:.0f}% 완료")
+        # fn.noti_print(f'{start_page-10} 페이지 {idx+1}번({title}) 작업완료: {frame}')
 
+def page_todo():
+    with open('C:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/logs/new_log.json', 'r',encoding='utf-8') as jfile:
+        data = json.load(jfile)
+    data=data['Daily']
+    max_value = 0
+    max_key = None
 
+    for key in data.keys():
+        last_page = int(key.split('-')[-1])
+        # 현재까지의 최대 값과 비교
+        if last_page > max_value:
+            max_value = last_page
+            max_key = key
+    return max_value+1 #max_key
 import sys
 
 if __name__ == "__main__":
     with open("C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/key.json", 'r',encoding='utf-8') as json_file:
         data = json.load(json_file)
     fn.api_key = data['Line_api']
-    start_page = input("시작페이지를 입력하세요: ")
-    start_page=int(start_page)
+    # start_page = input("시작페이지를 입력하세요: ")
+    start_page= page_todo()
+    # start_page=int(start_page)
+    print(f"{start_page}-{start_page+9} 페이지 작업 시작")
     with fn.main():
         get_source(start_page)
     fn.noti_print(f"{start_page}-{start_page+9} 페이지 작업 완료")
