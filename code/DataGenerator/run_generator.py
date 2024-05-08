@@ -6,9 +6,11 @@ from datetime import datetime
 import time
 from tqdm import tqdm
 from data_generator import *
+from filenoti import filenoti as fn #라인 알림
 # import datetime
 #####################################################################################################
 # C:/Users/oem/AppData/Local/Programs/Python/Python38/python.exe c:/Users/oem/Desktop/jhy/signlanguage/SignLanguageTranslator/code/DataGenerator/run_generator.py
+
 
 def write_txt_log(T_path, text):
     current_time = datetime.now()
@@ -36,6 +38,8 @@ def update_json_log(JSON_LOG_PATH, page, job_todo):
 
 def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 return item_li 반환
     print(repeat,'번 반복예정')
+    
+
     TXT_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\LOG.TXT'
     JSON_LOG_PATH = r'C:\Users\oem\Desktop\jhy\signlanguage\signLanguageTranslator\logs\new_log.json'
     job_todo = []
@@ -71,12 +75,12 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
             # data_to_log = j_data
             # data_to_log[subject][page] = dict()
             for i, item in enumerate(item_li):
-                item_start_time = datetime.now()
+                # item_start_time = datetime.now()
                 # print(item['title'], f'No.{i +1} in Page {page}')
                 title, url_path = item['title'],item['subDescription'] 
                 job_todo.append([title,url_path])
-                item_end_time = datetime.now()
-            page_end_time = datetime.now()
+            #     item_end_time = datetime.now()
+            # page_end_time = datetime.now()
             # write_txt_log(TXT_LOG_PATH, f'Page {todo_page} 요청 완료 (페이지 완료까지 걸린시간 {page_end_time - page_start_time})')
     
         else:
@@ -88,9 +92,11 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
     retries = 0
     while retries < 5:
         try:
+            print('###############')
+            print(start_page)
             update_json_log(JSON_LOG_PATH,f'{start_page- repeat}-{start_page-1}',job_todo)
             print("Successfully updated the JSON log.")
-            call_generator(job_todo)
+            call_generator(job_todo,start_page)
             break  # 성공 시 루프 탈출
         except Exception as e:
             retries += 1
@@ -100,16 +106,25 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
     if retries == 5:
         print("Max retries reached. Could not update the JSON log.")
     
-def call_generator(todo_list):
+def call_generator(todo_list,start_page):
+    i = 0
     for job in tqdm(todo_list):
+        # fn.noti_print(f'{start_page-10+i}번 페이지 작업 시작')
+        i+=1
         title, url_path = job
-        # make_data(title, url_path)
+        make_data(title, url_path)
 
 
 import sys
 
 if __name__ == "__main__":
+    with open("C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/key.json", 'r',encoding='utf-8') as json_file:
+        data = json.load(json_file)
+    fn.api_key = data['Line_api']
     start_page = input("시작페이지를 입력하세요: ")
-    get_source(int(start_page))
+    start_page=int(start_page)
+    with fn.main():
+        get_source(start_page)
+    fn.noti_print(f"{start_page}-{start_page+9} 페이지 작업 완료")
 
 

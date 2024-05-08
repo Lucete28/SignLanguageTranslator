@@ -42,9 +42,9 @@ def make_data(act_ko, v_path): #단어와 영상주소
     os.makedirs(f'{Dataset_path}/{ACTION}', exist_ok=True)
     # 파라미터 값
     rotate_li = [0, 5, -5]  # 각 범위 축소(+- 10 삭제)
-    speed_li = [1, 3, 5]
+    speed_li = [2, 4, 6]
     size_li = [1, 1.25, 1.5]
-    
+
     # 동영상 파일 열기
     cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -99,53 +99,54 @@ def make_data(act_ko, v_path): #단어와 영상주소
                             joint[j] = [lm.x, lm.y, lm.z]
                         v1_indices = [12, 11]  # 부모 관절 어깨
                         v2_indices = [16, 15]  # 자식 관절 손목
-                        v1 = joint[v1_indices, :3]
-                        v2 = joint[v2_indices, :3]
-                        v = v2 - v1
+                        if not (np.isnan(joint[v1_indices]).any() or np.isnan(joint[v2_indices]).any()):
+                            v1 = joint[v1_indices, :3]
+                            v2 = joint[v2_indices, :3]
+                            v = v2 - v1
 
-                        # 정규화
-                        v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
-
-                        # 벡터 사이의 각도 계산
-                        angle = np.arccos(np.einsum('nt,nt->n', v, v))  # 내적 계산
-
-                        angle = np.degrees(angle)
-                        angle = np.array([angle], dtype=np.float32)
-
-                        # 모든 관절과 각도를 1차원 배열로 합쳐 저장
-                        pose_data.append(np.concatenate([joint.flatten(), angle.flatten()]))
-
-                # #손 처리
-                    
-                        single_hand = []
-                        for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
-                            mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
-                            joint = np.zeros((21, 3))
-                            for j, lm in enumerate(res.landmark):
-                                joint[j] = [lm.x, lm.y, lm.z]
-
-                            # Compute angles between joints
-                            v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
-                            v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
-                            v = v2 - v1 # [20, 3]
-                            # Normalize v
+                            # 정규화
                             v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
 
-                            # Get angle using arcos of dot product
-                            angle = np.arccos(np.einsum('nt,nt->n',
-                                v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
-                                v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]\
+                            # 벡터 사이의 각도 계산
+                            angle = np.arccos(np.einsum('nt,nt->n', v, v))  # 내적 계산
 
-                            angle = np.degrees(angle) # Convert radian to degree
+                            angle = np.degrees(angle)
                             angle = np.array([angle], dtype=np.float32)
-                            single_hand.append(np.concatenate([joint.flatten(),angle.flatten()]))
-                            if len(hand_result.multi_hand_landmarks)==1:
-                                single_hand.append(np.zeros_like(single_hand[0]))
-                        # da.append([np.concatenate(d)])
-                        hand_data.append(np.concatenate(single_hand))        
+
+                            # 모든 관절과 각도를 1차원 배열로 합쳐 저장
+                            pose_data.append(np.concatenate([joint.flatten(), angle.flatten()]))
+
+                    # #손 처리
+                        
+                            single_hand = []
+                            for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
+                                mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
+                                joint = np.zeros((21, 3))
+                                for j, lm in enumerate(res.landmark):
+                                    joint[j] = [lm.x, lm.y, lm.z]
+
+                                # Compute angles between joints
+                                v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                                v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
+                                v = v2 - v1 # [20, 3]
+                                # Normalize v
+                                v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+                                # Get angle using arcos of dot product
+                                angle = np.arccos(np.einsum('nt,nt->n',
+                                    v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+                                    v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]\
+
+                                angle = np.degrees(angle) # Convert radian to degree
+                                angle = np.array([angle], dtype=np.float32)
+                                single_hand.append(np.concatenate([joint.flatten(),angle.flatten()]))
+                                if len(hand_result.multi_hand_landmarks)==1:
+                                    single_hand.append(np.zeros_like(single_hand[0]))
+                            # da.append([np.concatenate(d)])
+                            hand_data.append(np.concatenate(single_hand))        
 
 
-                cv2.imshow('img', img)
+                # cv2.imshow('img', img)
             # if cv2.waitKey(int(1 * speed)) & 0xFF == ord('q'): # 속도조절 (delay 는 int 여야함 0이면 오류가능)
             if cv2.waitKey(1) & 0xFF == ord('q'): # 속도조절 (delay 는 int 여야함 0이면 오류가능)
                 break
@@ -171,7 +172,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
     # 파일 저장
     if len(full_seq_data.shape) ==3 :
-        np.save(os.path.join(f'{Dataset_path}/{ACTION}', f'raw_{created_time}'), data)
+        np.save(os.path.join(f'{Dataset_path}/{ACTION}', f'raw_{created_time}_{data.shape[0]}'), data)
         # np.save(os.path.join(f'dataset/{ACTION}', f'seq_{created_time}_{full_seq_data.shape[0]}'), full_seq_data)
         print(ACTION,'데이터가 저장되었습니다. shape: ', data.shape)
     
@@ -181,7 +182,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
 
     # 비정상 폴더 삭제 (빈폴더)
-    if os.path.exists(f'{Dataset_path}/{ACTION}') and not os.listdir(f'dataset/{ACTION}'):
+    if os.path.exists(f'{Dataset_path}/{ACTION}') and not os.listdir(f'{Dataset_path}/{ACTION}'):
         os.rmdir(f'{Dataset_path}/{ACTION}')  
         print(f"{f'{Dataset_path}/{ACTION}'} 비정상 폴더 삭제")
 
