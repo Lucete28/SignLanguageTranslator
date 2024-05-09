@@ -7,24 +7,25 @@ from datetime import datetime
 import random
 from googletrans import Translator
 from itertools import product
+import json
+from filenoti import filenoti as fn #라인 알림
+with open("C:/Users/oem/Desktop/jhy/signlanguage/Sign_Language_Remaster/key.json", 'r',encoding='utf-8') as json_file:
+    data = json.load(json_file)
+fn.api_key = data['Line_api']
 
-def video_test():
-    print("임시 영상재생")
+def check_network():
+    print("Network Check start")
     cap = cv2.VideoCapture('https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
-        # 프레임에 대한 처리
-        cv2.imshow('Frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        break
     cap.release()
     cv2.destroyAllWindows()
-    print("임시 영상 재생 종료")
+    print("Network Check end")
 
 def make_data(act_ko, v_path): #단어와 영상주소 
-    video_test()
+    check_network()
+    Dataset_path = 'C:/Users/oem/Desktop/jhy/new_dataset'
     def apply_settings(image, angle, size = 1):
         height, width = image.shape[:2]
         center = (width // 2, height // 2)
@@ -38,12 +39,12 @@ def make_data(act_ko, v_path): #단어와 영상주소
     seq_length = 30
     created_time = datetime.now().strftime('%y_%m_%d')
     print('created at :',created_time)
-    os.makedirs(f'dataset/{ACTION}', exist_ok=True)
+    os.makedirs(f'{Dataset_path}/{ACTION}', exist_ok=True)
     # 파라미터 값
     rotate_li = [0, 5, -5]  # 각 범위 축소(+- 10 삭제)
-    speed_li = [1, 3, 5]
+    speed_li = [2, 4, 6]
     size_li = [1, 1.25, 1.5]
-    
+
     # 동영상 파일 열기
     cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -100,6 +101,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
                             joint[j] = [lm.x, lm.y, lm.z]
                         v1_indices = [12, 11]  # 부모 관절 어깨
                         v2_indices = [16, 15]  # 자식 관절 손목
+                        
                         v1 = joint[v1_indices, :3]
                         v2 = joint[v2_indices, :3]
                         v = v2 - v1
@@ -109,42 +111,48 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
                         # 벡터 사이의 각도 계산
                         angle = np.arccos(np.einsum('nt,nt->n', v, v))  # 내적 계산
-
                         angle = np.degrees(angle)
                         angle = np.array([angle], dtype=np.float32)
+                        raw_pose_data = np.concatenate([joint.flatten(), angle.flatten()])
 
-                        # 모든 관절과 각도를 1차원 배열로 합쳐 저장
-                        pose_data.append(np.concatenate([joint.flatten(), angle.flatten()]))
-
-                        #손 처리                    
-                        single_hand = []
-                        for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
-                            mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
-                            joint = np.zeros((21, 3))
-                            for j, lm in enumerate(res.landmark):
-                                joint[j] = [lm.x, lm.y, lm.z]
-
-                            # 각 계산
-                            v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
-                            v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
-                            v = v2 - v1 # [20, 3]
-                            # 정규화
-                            v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
-
-                            # Get angle using arcos of dot product
-                            angle = np.arccos(np.einsum('nt,nt->n',
-                                v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
-                                v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]\
-
-                            angle = np.degrees(angle) # Convert radian to degree
-                            angle = np.array([angle], dtype=np.float32)
-                            single_hand.append(np.concatenate([joint.flatten(),angle.flatten()]))
-                            if len(hand_result.multi_hand_landmarks)==1:
-                                single_hand.append(np.zeros_like(single_hand[0]))
-                        hand_data.append(np.concatenate(single_hand))        
+                        if not np.isnan(raw_pose_data).any(): # nan 값 확인
+                            # 모든 관절과 각도를 1차원 배열로 합쳐 저장
+                            pose_data.append(raw_pose_data)
+                            if np.isnan(raw_pose_data).any():
+                                print('err occur in pose!!!!!!')
 
 
-                cv2.imshow('img', img)
+                # #손 처리
+                    
+                            single_hand = []
+                            for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
+                                mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
+                                joint = np.zeros((21, 3))
+                                for j, lm in enumerate(res.landmark):
+                                    joint[j] = [lm.x, lm.y, lm.z]
+
+                                # Compute angles between joints
+                                v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                                v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
+                                v = v2 - v1 # [20, 3]
+                                # Normalize v
+                                v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+                                # Get angle using arcos of dot product
+                                angle = np.arccos(np.einsum('nt,nt->n',
+                                    v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+                                    v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]\
+
+                                angle = np.degrees(angle) # Convert radian to degree
+                                angle = np.array([angle], dtype=np.float32)
+                                single_hand.append(np.concatenate([joint.flatten(),angle.flatten()]))
+                                if len(hand_result.multi_hand_landmarks)==1:
+                                    single_hand.append(np.zeros_like(single_hand[0]))
+                            # da.append([np.concatenate(d)])
+                            hand_data.append(np.concatenate(single_hand))        
+
+
+                # cv2.imshow('img', img)
             # if cv2.waitKey(int(1 * speed)) & 0xFF == ord('q'): # 속도조절 (delay 는 int 여야함 0이면 오류가능)
             if cv2.waitKey(1) & 0xFF == ord('q'): # 속도조절 (delay 는 int 여야함 0이면 오류가능)
                 break
@@ -167,10 +175,13 @@ def make_data(act_ko, v_path): #단어와 영상주소
 
     full_seq_data = np.array(full_seq_data)
     # print(ACTION, full_seq_data.shape, data.shape) # 데이터 모양 확인
-
+    #nan 값 확인
+    if np.isnan(data).any():
+        print('nan 발생: ',np.where(np.isnan(data)))
+        fn.noti_print(ACTION,"데이터 셋에서 nan 발생!!")
     # 파일 저장
     if len(full_seq_data.shape) ==3 :
-        np.save(os.path.join(f'dataset/{ACTION}', f'raw_{created_time}'), data)
+        np.save(os.path.join(f'{Dataset_path}/{ACTION}', f'raw_{created_time}_{data.shape[0]}'), data)
         # np.save(os.path.join(f'dataset/{ACTION}', f'seq_{created_time}_{full_seq_data.shape[0]}'), full_seq_data)
         print(ACTION,'데이터가 저장되었습니다. shape: ', data.shape)
     
@@ -178,11 +189,12 @@ def make_data(act_ko, v_path): #단어와 영상주소
     cap.release()
     cv2.destroyAllWindows()
 
+
     # 비정상 폴더 삭제 (빈폴더)
-    if os.path.exists(f'dataset/{ACTION}') and not os.listdir(f'dataset/{ACTION}'):
-        os.rmdir(f'dataset/{ACTION}')  
-        print(f"{f'dataset/{ACTION}'} 비정상 삭제")
+    if os.path.exists(f'{Dataset_path}/{ACTION}') and not os.listdir(f'{Dataset_path}/{ACTION}'):
+        os.rmdir(f'{Dataset_path}/{ACTION}')  
+        print(f"{f'{Dataset_path}/{ACTION}'} 비정상 폴더 삭제")
 
+    return {'data.shape':data.shape}
 
-
-# make_data('tmp','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')
+# make_data('TEST','https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735712/MOV000240883_700X466.mp4')

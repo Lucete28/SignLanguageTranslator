@@ -26,8 +26,6 @@ KST = timezone(timedelta(hours=9))
 current_time = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
 
-
-# PATH_LIST = ['13.124.201.219:54205','52.79.75.52:53637','13.124.40.13:54075']
 PATH_LIST = ['13.124.40.13:51262',
              '52.79.111.30:58130',
              '15.165.140.203:54038',
