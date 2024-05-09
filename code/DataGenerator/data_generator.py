@@ -61,12 +61,14 @@ def make_data(act_ko, v_path): #단어와 영상주소
     # MediaPipe hands model
     mp_hands = mp.solutions.hands
     mp_pose = mp.solutions.pose
+    
     mp_drawing = mp.solutions.drawing_utils
     hands = mp_hands.Hands(
         max_num_hands=2,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5)
     pose = mp_pose.Pose()
+    
     hand_data = []
     pose_data = []
     for i, g_param in enumerate(gen_param):
@@ -114,8 +116,7 @@ def make_data(act_ko, v_path): #단어와 영상주소
                         # 모든 관절과 각도를 1차원 배열로 합쳐 저장
                         pose_data.append(np.concatenate([joint.flatten(), angle.flatten()]))
 
-                # #손 처리
-                    
+                        #손 처리                    
                         single_hand = []
                         for res in hand_result.multi_hand_landmarks:  # res 잡힌 만큼 (max 손 개수 이하)
                             mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
@@ -123,11 +124,11 @@ def make_data(act_ko, v_path): #단어와 영상주소
                             for j, lm in enumerate(res.landmark):
                                 joint[j] = [lm.x, lm.y, lm.z]
 
-                            # Compute angles between joints
+                            # 각 계산
                             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
                             v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
                             v = v2 - v1 # [20, 3]
-                            # Normalize v
+                            # 정규화
                             v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
 
                             # Get angle using arcos of dot product
@@ -140,7 +141,6 @@ def make_data(act_ko, v_path): #단어와 영상주소
                             single_hand.append(np.concatenate([joint.flatten(),angle.flatten()]))
                             if len(hand_result.multi_hand_landmarks)==1:
                                 single_hand.append(np.zeros_like(single_hand[0]))
-                        # da.append([np.concatenate(d)])
                         hand_data.append(np.concatenate(single_hand))        
 
 

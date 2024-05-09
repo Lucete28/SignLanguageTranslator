@@ -91,9 +91,9 @@ def get_source(start_page, repeat=10): #    해야하는 페이지 받아서 ret
             update_json_log(JSON_LOG_PATH,start_page,job_todo)
             print("Successfully updated the JSON log.")
             call_generator(job_todo)
-            break  # 성공 시 루프 탈출
-        except Exception as e:
-            retries += 1
+            break  
+        except Exception as e: # json 파일 중복 접근 해결
+            retries += 1 
             print(f"Error occurred: {e}. Retry {retries}/{5} in {5} seconds...")
             time.sleep(5)
 
